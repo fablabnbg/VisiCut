@@ -9,6 +9,7 @@ www.visicut.org
 
 Download
 --------
+* Version from Fablab Nürnberg: https://github.com/fablabnbg/VisiCut/releases
 * Latest stable releases: http://download.visicut.org
 * Development builds: http://download.visicut.org/develop
 * If those don't work: https://github.com/t-oster/VisiCut/releases
