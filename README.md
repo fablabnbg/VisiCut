@@ -1,6 +1,8 @@
 # VisiCut
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6ded4f0de59d41969fef2d71312f0b4f)](https://app.codacy.com/manual/t-oster/VisiCut?utm_source=github.com&utm_medium=referral&utm_content=t-oster/VisiCut&utm_campaign=Badge_Grade_Settings)
+[![Downloads](https://img.shields.io/github/downloads/fablabnbg/VisiCut/total.svg?maxAge=2592000?style=flat-square)](https://github.com/fablabnbg/VisiCut/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/fablabnbg/VisiCut.svg)](https://github.com/fablabnbg/VisiCut/releases)
 [![Build Status](https://travis-ci.org/t-oster/VisiCut.svg?branch=master)](https://travis-ci.org/t-oster/VisiCut)
 
 A userfriendly, platform-independent tool for preparing, saving and sending jobs to Lasercutters.<br/>
