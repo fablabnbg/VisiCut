@@ -6,16 +6,17 @@ VisiCut
 
 a userfriendly, platform-independent tool for preparing, saving and sending jobs to Lasercutters.
 
-For more information please look at the project page at:
-
-www.visicut.org
-
 Download
 --------
 * Version from Fablab Nürnberg: https://github.com/fablabnbg/VisiCut/releases
 * Latest stable releases: http://download.visicut.org
 * Development builds: http://download.visicut.org/develop
 * If those don't work: https://github.com/t-oster/VisiCut/releases
+
+For more information please look at the project page at:
+
+www.visicut.org
+
 
 Compiling and Hacking
 ---------------------
