@@ -36,7 +36,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,12 +119,14 @@ public final class PreferencesManager
       mp.setColor(Color.WHITE);
       mp.setCutColor(Color.RED);
       mp.setEngraveColor(Color.DARK_GRAY);
+      mp.setMaterialThicknesses(new LinkedList<Float>(Arrays.asList(new Float(1.0))));
       MaterialManager.getInstance().add(mp);
       mp = new MaterialProfile();
       mp.setName("Acrylic");
       mp.setColor(Color.BLUE);
       mp.setCutColor(Color.RED);
       mp.setEngraveColor(Color.WHITE);
+      mp.setMaterialThicknesses(new LinkedList<Float>(Arrays.asList(new Float(1.0))));
       MaterialManager.getInstance().add(mp);
       preferences.setLastMaterial(mp.getName());
     }
@@ -325,9 +329,7 @@ public final class PreferencesManager
   
   public void savePreferences(Preferences pref, File f) throws FileNotFoundException, IOException
   {
-    FileOutputStream os = new FileOutputStream(f);
-    getXStream().toXML(pref, os);
-    os.close();
+    FilebasedManager.writeObjectToXmlFile(pref, f, getXStream());
   }
 
   private XStream xstream = null;
@@ -344,18 +346,7 @@ public final class PreferencesManager
   
   public Preferences loadPreferences(File f) throws FileNotFoundException
   {
-    try
-    {
-      return (Preferences) getXStream().fromXML(f);
-    }
-    catch (Exception e)
-    {
-      FileInputStream os = new FileInputStream(f);
-      XMLDecoder decoder = new XMLDecoder(os);
-      Preferences p = (Preferences) decoder.readObject();
-      decoder.close();
-      return p;
-    }
+    return (Preferences) FilebasedManager.readObjectFromXmlFile(f, getXStream());
   }
 
   public void exportSettings(File file) throws FileNotFoundException, IOException
