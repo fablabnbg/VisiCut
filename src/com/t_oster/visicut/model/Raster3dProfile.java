@@ -18,6 +18,7 @@
  **/
 package com.t_oster.visicut.model;
 
+import com.t_oster.liblasercut.LaserCutter;
 import com.t_oster.liblasercut.LaserJob;
 import com.t_oster.liblasercut.LaserProperty;
 import com.t_oster.liblasercut.ProgressListener;
@@ -94,7 +95,7 @@ public class Raster3dProfile extends LaserProfile
     this.colorShift = colorShift;
   }
 
-  public BufferedImage getRenderedPreview(GraphicSet objects, MaterialProfile material, AffineTransform mm2px, ProgressListener pl)
+  public BufferedImage getRenderedPreview(GraphicSet objects, MaterialProfile material, AffineTransform mm2px, ProgressListener pl) throws InterruptedException
   {
     Rectangle bb = Helper.toRect(Helper.transform(objects.getBoundingBox(), mm2px));
     if (bb != null && bb.width > 0 && bb.height > 0)
@@ -139,6 +140,9 @@ public class Raster3dProfile extends LaserProfile
         }
         if (pl != null)
         {
+          if (Thread.interrupted()) {
+            throw new InterruptedException();
+          }
           pl.progressChanged(this, 100 * y / ad.getHeight());
         }
       }
@@ -148,12 +152,12 @@ public class Raster3dProfile extends LaserProfile
   }
   
   @Override
-  public void renderPreview(Graphics2D gg, GraphicSet objects, MaterialProfile material, AffineTransform mm2px)
+  public void renderPreview(Graphics2D gg, GraphicSet objects, MaterialProfile material, AffineTransform mm2px) throws InterruptedException
   {
     this.renderPreview(gg, objects, material, mm2px, null);
   }
 
-  public void renderPreview(Graphics2D gg, GraphicSet objects, MaterialProfile material, AffineTransform mm2px, ProgressListener pl)
+  public void renderPreview(Graphics2D gg, GraphicSet objects, MaterialProfile material, AffineTransform mm2px, ProgressListener pl) throws InterruptedException
   {
     Rectangle bb = Helper.toRect(Helper.transform(objects.getBoundingBox(), mm2px));
     BufferedImage scaledImg = this.getRenderedPreview(objects, material, mm2px, pl);
@@ -183,7 +187,7 @@ public class Raster3dProfile extends LaserProfile
   }
 
   @Override
-  public void addToLaserJob(LaserJob job, GraphicSet set, List<LaserProperty> laserProperties)
+  public void addToLaserJob(LaserJob job, GraphicSet set, List<LaserProperty> laserProperties, LaserCutter cutter)
   {
     double factor = Util.dpi2dpmm(this.getDPI());
     AffineTransform mm2laserPx = AffineTransform.getScaleInstance(factor, factor);

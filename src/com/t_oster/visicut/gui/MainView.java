@@ -72,6 +72,7 @@ import com.frochr123.periodictasks.RefreshProjectorThread;
 import com.frochr123.periodictasks.RefreshQRCodesTask;
 import com.t_oster.visicut.Preferences;
 import com.t_oster.visicut.misc.Homography;
+import com.t_oster.visicut.misc.LabSettings;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FileDialog;
@@ -110,6 +111,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -407,18 +409,44 @@ public class MainView extends javax.swing.JFrame
       }
     });
     //apply the saved window size and position, if in current screen size
+    // Note: the window size is saved at exit in MainView.exitMenuItemActionPerformed()
     Rectangle lastBounds = PreferencesManager.getInstance().getPreferences().getWindowBounds();
-    if (lastBounds != null && this.getGraphicsConfiguration().getBounds().contains(lastBounds))
+    Rectangle graphicsBounds = this.getGraphicsConfiguration().getBounds();
+    if (lastBounds != null && lastBounds.width <= graphicsBounds.width && lastBounds.height <= graphicsBounds.height)
     {
       this.setExtendedState(JFrame.NORMAL);
       this.setPreferredSize(new Dimension(lastBounds.width, lastBounds.height));
       this.setBounds(lastBounds);
+    } else {
+      // previous state was maximized (this is stored as "null"),
+      // or we failed to restore last position and fall back to maximized
+      this.setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
     }
 
     // all GUI parts are now initialised.
     if (LaserDeviceManager.getInstance().getAll().isEmpty())
     {
+      // no lasercutters present - ask for downloading settings
       this.jmDownloadSettingsActionPerformed(null);
+    } else {
+      // Ask for updating settings if they are old.
+      if (!Helper.basePathIsVersionControlled() // settings is not under version control
+        && visicutModel1.getPreferences().isAutoUpdateSettings() // auto-update is enabled
+        && !getRecommendedLab().equals("") // and we know where to download the settings
+        // and the last update is more than 14 days ago (or unknown)
+        && visicutModel1.getPreferences().getDaysSinceLastAutoUpdate() > 14)
+      {
+        // Ask: "Would you like to download updated settings?"
+        if (dialog.showYesNoQuestion(bundle.getString("UPDATE_SETTINGS")))
+        {
+          // TODO: We could skip some of the questions im jmDownloadSettingsActionPerfored.
+          // TODO: We could check if the remote file has actually changed and keep quiet otherwise.
+          // see https://www.hackdiary.com/2003/04/09/using-http-conditional-get-in-java-for-efficient-polling/
+          this.jmDownloadSettingsActionPerformed(null);
+        }
+        visicutModel1.getPreferences().resetLastAutoUpdateTime();
+      }
+
     }
 
     // Cleanup old temporary files, which might not have been deleted correctly
@@ -691,6 +719,7 @@ public class MainView extends javax.swing.JFrame
     cbMaterialThickness = new javax.swing.JComboBox();
     btAddMaterialThickness = new javax.swing.JButton();
     jCheckBox1 = new javax.swing.JCheckBox();
+    jCheckBoxAutoFocus = new javax.swing.JCheckBox();
     executeJobButton = new javax.swing.JButton();
     objectComboBox = new javax.swing.JComboBox();
     jSeparator1 = new javax.swing.JSeparator();
@@ -906,6 +935,19 @@ public class MainView extends javax.swing.JFrame
     org.jdesktop.beansbinding.Binding binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, visicutModel1, org.jdesktop.beansbinding.ELProperty.create("${useThicknessAsFocusOffset}"), jCheckBox1, org.jdesktop.beansbinding.BeanProperty.create("selected"), "cbUseThickness");
     bindingGroup.addBinding(binding);
 
+    jCheckBoxAutoFocus.setText(resourceMap.getString("jCheckBoxAutoFocus.text")); // NOI18N
+    jCheckBoxAutoFocus.setToolTipText(resourceMap.getString("jCheckBoxAutoFocus.toolTipText")); // NOI18N
+    jCheckBoxAutoFocus.setName("jCheckBoxAutoFocus"); // NOI18N
+
+    jCheckBoxAutoFocus.addActionListener(new java.awt.event.ActionListener()
+    {
+      public void actionPerformed(java.awt.event.ActionEvent evt)
+      {
+        visicutModel1.setAutoFocusEnabled(jCheckBoxAutoFocus.isSelected());
+      }
+    });
+
+
     executeJobButton.setText(resourceMap.getString("executeJobButton.text")); // NOI18N
     executeJobButton.setName("executeJobButton"); // NOI18N
     executeJobButton.addActionListener(new java.awt.event.ActionListener()
@@ -1010,7 +1052,7 @@ public class MainView extends javax.swing.JFrame
                 .addComponent(jLabelJobName)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jTextFieldJobName)
-                .addGap(199, 199, 199)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(executeJobButton))
               .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(jLabel10)
@@ -1043,6 +1085,7 @@ public class MainView extends javax.swing.JFrame
                     .addComponent(btAddMaterialThickness, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE))
                   .addComponent(jLabel5))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                  .addComponent(jCheckBoxAutoFocus, javax.swing.GroupLayout.PREFERRED_SIZE, 197, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addComponent(jCheckBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 197, javax.swing.GroupLayout.PREFERRED_SIZE))
               .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -1073,6 +1116,7 @@ public class MainView extends javax.swing.JFrame
             .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
               .addComponent(cbMaterialThickness, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
               .addComponent(btAddMaterialThickness, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)))
+            .addComponent(jCheckBoxAutoFocus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
           .addComponent(jCheckBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
         .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 8, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1084,7 +1128,7 @@ public class MainView extends javax.swing.JFrame
             .addComponent(objectComboBox)
             .addComponent(jLabel2)))
         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 347, javax.swing.GroupLayout.PREFERRED_SIZE)
+        .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 347, Short.MAX_VALUE)
         .addGap(48, 48, 48)
         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
           .addComponent(timeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1701,7 +1745,12 @@ public class MainView extends javax.swing.JFrame
   }// </editor-fold>//GEN-END:initComponents
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
-      PreferencesManager.getInstance().getPreferences().setWindowBounds(MainView.this.getBounds());
+      Rectangle bounds = this.getBounds();
+      if ((this.getExtendedState() & MAXIMIZED_BOTH) == MAXIMIZED_BOTH) {
+        // window is maximized, store this as "null"
+        bounds = null;
+      }
+      PreferencesManager.getInstance().getPreferences().setWindowBounds(bounds);
       this.visicutModel1.updatePreferences();
       System.exit(0);
     }//GEN-LAST:event_exitMenuItemActionPerformed
@@ -1867,25 +1916,37 @@ public class MainView extends javax.swing.JFrame
     if (this.visicutModel1.getSelectedLaserDevice() != null)
     {
       LaserCutter lc = this.visicutModel1.getSelectedLaserDevice().getLaserCutter();
-      for (LaserProperty p : new LaserProperty[]
+      if (lc.getProperty("SoftwareFocusNotSupported") != null) {
+        focusSupported = !(Boolean) lc.getProperty("SoftwareFocusNotSupported");
+      } else {
+        for (LaserProperty p : new LaserProperty[]
+          {
+            lc.getLaserPropertyForVectorPart(),
+            lc.getLaserPropertyForRasterPart(),
+            lc.getLaserPropertyForRaster3dPart()
+          })
         {
-          lc.getLaserPropertyForVectorPart(),
-          lc.getLaserPropertyForRasterPart(),
-          lc.getLaserPropertyForRaster3dPart()
-        })
-      {
-        if (p != null && Arrays.asList(p.getPropertyKeys()).contains("focus"))
-        {
-          focusSupported = true;
-          break;
+          if (p != null && Arrays.asList(p.getPropertyKeys()).contains("focus"))
+          {
+            focusSupported = true;
+            break;
+          }
         }
+      }
+      if (lc.isAutoFocus()) {
+        // Display the autofocus setting as retained in VisicutModel
+        this.jCheckBoxAutoFocus.setSelected(visicutModel1.isAutoFocusEnabled());
+        this.jCheckBoxAutoFocus.setVisible(true);
+      } else {
+        this.jCheckBoxAutoFocus.setVisible(false);
       }
     }
     if (!focusSupported || (MaterialManager.getInstance().getAll().size() == 1 && MaterialManager.getInstance().getAll().get(0).getMaterialThicknesses().size() == 1))
     {
       this.jCheckBox1.setSelected(false);
       this.jCheckBox1.setVisible(false);
-      this.jSeparator1.setVisible(this.laserCutterComboBox.isVisible());
+      this.jSeparator1.setVisible(this.laserCutterComboBox.isVisible() ||
+          this.jCheckBoxAutoFocus.isVisible());
     }
     else
     {
@@ -2214,6 +2275,7 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             }
             List<String> warnings = new LinkedList<String>();
             MainView.this.visicutModel1.sendJob(jobname, pl, cuttingSettings, warnings);
+
             for (String w : warnings)
             {
               dialog.showWarningMessage(w);
@@ -2497,7 +2559,13 @@ private void executeJobMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
             ImageInputStream stream = new MemoryCacheImageInputStream(conn.getInputStream());
             BufferedImage back = ImageIO.read(stream);
             if (back == null) {
-              throw new Exception("camera image is null");
+              if (conn.getHeaderFields().containsKey("Location")) {
+                // URLConnection does not follow cross-protocol redirects, e.g. from HTTP to HTTPS.
+                // Then, we'll get stuck here.
+                // https://stackoverflow.com/questions/1884230/urlconnection-doesnt-follow-redirect
+                throw new Exception("Did not receive a camera image, but only a HTTP/S redirect. Please use the actual URL instead: " + conn.getHeaderField("Location"));
+              }
+              throw new Exception("Cannot read camera image: invalid format or empty file. Please make sure the camera URL returns a valid JPEG or PNG image.");
             }
             LaserDevice ld = visicutModel1.getSelectedLaserDevice();
             if (ld == null || !isCameraActive() || !isPreviewPanelShowBackgroundImage()) {
@@ -2620,13 +2688,13 @@ private void executeJobMenuItemActionPerformed(java.awt.event.ActionEvent evt) {
   @Action
   public void zoomIn()
   {
-    previewPanel.setZoom(previewPanel.getZoom() - (-2 * previewPanel.getZoom() / 32));
+    previewPanel.setZoom((int) (previewPanel.getZoom() * 1.3));
   }
 
   @Action
   public void zoomOut()
   {
-    previewPanel.setZoom(previewPanel.getZoom() - (2 * previewPanel.getZoom() / 32));
+    previewPanel.setZoom((int) (previewPanel.getZoom() / 1.3));
   }
 
 private void editMappingMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editMappingMenuItemActionPerformed
@@ -2843,9 +2911,38 @@ private void materialComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//
   {
     PreferencesManager.getInstance().importSettings(file);
     this.visicutModel1.setPreferences(PreferencesManager.getInstance().getPreferences());
+    // unset the lab name for auto-updates. Will be reset in importSettingsFromWeb,
+    // if the update was loaded from the web (and not a local file).
+    this.visicutModel1.getPreferences().setLastAutoUpdateLabName("");
     this.fillComboBoxes();
     this.refreshExampleMenu();
     dialog.showSuccessMessage(bundle.getString("SETTINGS SUCCESSFULLY IMPORTED"));
+  }
+
+  /**
+   * Import Lasercutter settings from the web
+   * @param url HTTP(s) URL
+   * @param labName Name of FabLab to be preselected when the dialog
+   * "Download recommended settings" is opened the next time (may be empty).
+   * @throws Exception
+   */
+  private void importSettingsFromWeb(String url, String labName) throws Exception {
+    if (!(url.startsWith("https://") || url.startsWith("http://")))
+    {
+      throw new FileNotFoundException("illegal start of URL");
+    }
+    File tempfile = File.createTempFile("vcsettings-download", ".zip");
+    FileUtils.downloadUrlToFile(url, tempfile);
+    this.importSettingsFromFile(tempfile);
+    tempfile.delete();
+    // enable the automatic update of preferences:
+    // The user downloaded the preferences from the web, so in most cases it's
+    // desired to download updates (and discard local changes). Because the person
+    // who exported the preferences will probably have disabled auto-updates, we
+    // re-enable them here.
+    this.visicutModel1.getPreferences().setAutoUpdateSettings(true);
+    this.visicutModel1.getPreferences().setLastAutoUpdateLabName(labName);
+    this.visicutModel1.getPreferences().resetLastAutoUpdateTime();
   }
 
   private void jmImportSettingsActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jmImportSettingsActionPerformed
@@ -3363,49 +3460,81 @@ private void jmPreferencesActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     }
   }
 
+  /**
+   * Guess the recommended lab for downloading settings, based on last download
+   * URL or the local hostname.
+   * @return URL or selection key for jmDownloadSettingsActionPerformed, or "" if unknown.
+   */
+  private String getRecommendedLab() {
+
+    // Get default choice from last download
+    if (visicutModel1.getPreferences().getLastAutoUpdateLabName() != null) {
+      return visicutModel1.getPreferences().getLastAutoUpdateLabName();
+    }
+
+    // Otherwise:
+    // Get localhost FQDN for auto-detecting the lab, at least on computers owned by the lab.
+    try
+    {
+      final String hostname = InetAddress.getLocalHost().getCanonicalHostName();
+      Optional<LabSettings> r = LabSettings.get().stream().filter(s -> s.acceptsHostname(hostname)).findFirst();
+      if (r.isPresent()) {
+        return r.get().name;
+      }
+    }
+    catch (UnknownHostException ex)
+    {
+      // Cannot get local hostname -- ignore exception
+    }
+    
+    // Guess the lab based on wifi ssid.
+    String wirelessSsid = Helper.getWifiSSID();
+    if (wirelessSsid != null) {
+      Optional<LabSettings> r = LabSettings.get().stream().filter(s -> s.acceptsSSID(wirelessSsid)).findFirst();
+      if (r.isPresent()) {
+        return r.get().name;
+      }
+    }
+    
+    return ""; // unknown
+  }
+
+  /***
+   * "Download recommended settings" menu item clicked
+   * @param evt
+   */
 private void jmDownloadSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jmDownloadSettingsActionPerformed
   warningPanel.removeAllWarnings();
+  // Refuse download (overwrite) if the settings directory is a version control (git) repository
+  if (Helper.basePathIsVersionControlled()) {
+    dialog.showErrorMessage(bundle.getString("SETTINGS_DIR_IS_VCS_REPOSITORY") + "\n" + Helper.getBasePath());
+    return;
+  }
+
   Map<String, String> choices = new LinkedHashMap<String, String>();
   choices.put(bundle.getString("EXAMPLE_SETTINGS"), "__DEFAULT__");
-  Object defaultChoice = choices.keySet().toArray()[0];
+  Object defaultChoice = getRecommendedLab();
+  if ("".equals(defaultChoice)) {
+    defaultChoice = choices.keySet().toArray()[0];
+  }
   choices.put(bundle.getString("EMPTY_SETTINGS"), "__EMPTY__");
   choices.put(bundle.getString("IMPORT_SETTINGS_FROM_FILE"), "__FILE__");
-
-  // Get FQDN for auto-detecting the lab, at least on computers owned by the lab.
-  String hostname = "";
-  try
-  {
-    hostname = InetAddress.getLocalHost().getCanonicalHostName();
+  for (LabSettings s : LabSettings.get()) {
+    choices.put(s.name, s.URL);
   }
-  catch (UnknownHostException ex)
-  {
-    // Cannot get local hostname -- ignore exception
-  }
-
-  // Want your lab in this list? Look at https://github.com/t-oster/VisiCut/wiki/How-to-add-default-settings-for-your-lab !
-  // choices.put("Country, City: Institution", "https://example.org/foo.zip");
-  choices.put("China, Hong Kong: Renaissance College Hong Kong", "https://github.com/RCHK-DT/visicut-settings/archive/master.zip");
-  choices.put("Germany, Aachen: FabLab RWTH Aachen", "https://github.com/renebohne/zing6030-visicut-settings/archive/master.zip");
-  choices.put("Germany, Erlangen: FAU FabLab", "https://github.com/fau-fablab/visicut-settings/archive/master.zip");
-  if (hostname.endsWith(".fau.de") || hostname.endsWith(".uni-erlangen.de")) {
-    defaultChoice = "Germany, Erlangen: FAU FabLab";
-  }
-  choices.put("Germany, Nuremberg: Fab lab Region Nürnberg e.V.", "https://github.com/fablabnbg/visicut-settings/archive/master.zip");
-  choices.put("Germany, Veitsbronn: FabLab Landkreis Fürth e.V.", "https://github.com/falafue/visicut-settings/archive/master.zip");
-  choices.put("Germany, Berlin: Fab Lab Berlin", "https://github.com/FabLabBerlin/visicut-settings/archive/master.zip");
-  choices.put("Germany, Bremen: FabLab Bremen e.V.", "http://www.fablab-bremen.org/FabLab_Bremen.vcsettings");
-  choices.put("Germany, Paderborn: FabLab Paderborn e.V.", "https://github.com/fablab-paderborn/visicut-settings/archive/master.zip");
-  choices.put("Germany, Heidelberg: Heidelberg Makerspace", "https://github.com/heidelberg-makerspace/visicut-settings/archive/master.zip");
-  choices.put("Germany, Dresden: Makerspace Dresden", "https://github.com/Makerspace-Dresden/visicut-settings/archive/master.zip");
-  choices.put("France, HAUM: Le Mans Hackerspace", "https://github.com/haum/visicut-settings/archive/master.zip");
-  choices.put("Netherlands, Amersfoort: FabLab", "https://github.com/Fablab-Amersfoort/visicut-settings/archive/master.zip");
-  choices.put("Netherlands, Enschede: TkkrLab", "https://github.com/TkkrLab/visicut-settings/archive/master.zip");
-  choices.put("United Kingdom, Manchester: Hackspace", "https://github.com/hacmanchester/visicut-settings/archive/master.zip");
-  choices.put("United Kingdom, Leeds: Hackspace", "https://github.com/leedshackspace/visicut-settings/archive/master.zip");
   choices.put(bundle.getString("DOWNLOAD_NOT_IN_LIST"), "__HELP__");
+
+
+
   String s = (String) JOptionPane.showInputDialog(this, bundle.getString("DOWNLOAD_SETTINGS_INFO"), null, JOptionPane.PLAIN_MESSAGE, null, choices.keySet().toArray(), defaultChoice);
   if ((s == null) || (s.length() == 0))
   {
+    return;
+  }
+  if ("__HELP__".equals(choices.get(s)))
+  {
+    dialog.showInfoMessage("Please look at https://github.com/t-oster/VisiCut/wiki/How-to-add-default-settings-for-your-lab . \n You can reopen this dialog in Edit -> Settings -> Download.");
+    openWebpage("https://github.com/t-oster/VisiCut/wiki/How-to-add-default-settings-for-your-lab");
     return;
   }
   if (!askForOverwriteSettings())
@@ -3424,11 +3553,6 @@ private void jmDownloadSettingsActionPerformed(java.awt.event.ActionEvent evt) {
         this.importSettingsFromFile(null);
         return;
       }
-      else if (url.equals("__HELP__"))
-      {
-        dialog.showInfoMessage("Please look at https://github.com/t-oster/VisiCut/wiki/How-to-add-default-settings-for-your-lab . \n You can reopen this dialog in Edit -> Settings -> Download.");
-        return;
-      }
       else if (url.equals("__FILE__"))
       {
         this.importSettingsAskForFile();
@@ -3440,19 +3564,11 @@ private void jmDownloadSettingsActionPerformed(java.awt.event.ActionEvent evt) {
         return;
       }
     }
-    if (!(url.startsWith("https://") || url.startsWith("http://")))
-    {
-      dialog.showErrorMessage("Invalid URL or entry");
-      return;
-    }
-    File tempfile = File.createTempFile("vcsettings-download", ".zip");
-    FileUtils.downloadUrlToFile(url, tempfile);
-    this.importSettingsFromFile(tempfile);
-    tempfile.delete();
+    this.importSettingsFromWeb(url, s);
   }
   catch (Exception e)
   {
-    dialog.showErrorMessage("Could not download settings.\n" + e.getLocalizedMessage());
+    dialog.showErrorMessage("Could not download settings.\n" + DialogHelper.getHumanReadableErrorMessage(e));
   }
 }//GEN-LAST:event_jmDownloadSettingsActionPerformed
 
@@ -3532,6 +3648,7 @@ private void projectorActiveMenuItemActionPerformed(java.awt.event.ActionEvent e
   private javax.swing.JButton jButton1;
   private javax.swing.JButton jButton2;
   private javax.swing.JCheckBox jCheckBox1;
+  private javax.swing.JCheckBox jCheckBoxAutoFocus;
   private javax.swing.JLabel jLabel1;
   private javax.swing.JLabel jLabel10;
   private javax.swing.JLabel jLabel2;

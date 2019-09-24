@@ -19,6 +19,7 @@
 package com.t_oster.visicut.managers;
 
 import com.t_oster.liblasercut.LaserProperty;
+import com.t_oster.liblasercut.PowerSpeedFocusProperty;
 import com.t_oster.visicut.misc.Helper;
 import com.t_oster.visicut.model.LaserDevice;
 import com.t_oster.visicut.model.LaserProfile;
@@ -144,6 +145,11 @@ public class LaserPropertyManager
             }
             result.set(result.indexOf(p), expected);
           }
+          // Some laser properties have a "hideFocus" setting which is really a machine property but unfortunately gets serialized into the material properties.
+          // To get around this we copy the "hideFocus" value from the expected one from the machine over anything read from the config.
+          if (expected instanceof PowerSpeedFocusProperty && p instanceof PowerSpeedFocusProperty) {
+            ((PowerSpeedFocusProperty)p).setHideFocus(((PowerSpeedFocusProperty)expected).isHideFocus());
+          }
         }
       }
       return result;
@@ -181,44 +187,14 @@ public class LaserPropertyManager
     {
       f.getParentFile().mkdirs();
     }
-    FileOutputStream out = new FileOutputStream(f);
-    getXStream().toXML(lps, out);
-    out.close();
-  }
-
-  private List<LaserProperty> loadPropertiesOld(File f)
-  {
-    try
-    {
-      FileInputStream in = new FileInputStream(f);
-      XMLDecoder dec = new XMLDecoder(in);
-      List<LaserProperty> result = (List<LaserProperty>) dec.readObject();
-      dec.close();
-      return result;
-    }
-    catch (Exception e)
-    {
-      return null;
-    }
+    FilebasedManager.writeObjectToXmlFile(lps, f, getXStream());
   }
 
   public List<LaserProperty> loadProperties(File f) throws FileNotFoundException, IOException
   {
-    FileInputStream fin = new FileInputStream(f);
-    List<LaserProperty> result = this.loadProperties(fin);
-    fin.close();
-    if (result == null)
-    {
-      result = this.loadPropertiesOld(f);
-    }
-    return result;
-  }
-
-  public List<LaserProperty> loadProperties(InputStream in)
-  {
     try
     {
-      return (List<LaserProperty>) getXStream().fromXML(in);
+      return (List<LaserProperty>) FilebasedManager.readObjectFromXmlFile(f, getXStream());
     }
     catch (Exception e)
     {
