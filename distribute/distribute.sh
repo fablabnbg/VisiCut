@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e # exit 1 if any command fails
+cd "$(dirname "$0")"
 # set -x # uncomment for debugging
 if [ "$1" == "--nocompile" ]
 then
@@ -7,8 +8,8 @@ then
 else
    COMPILE=1
 fi
-echo "Determining Version:"
-VERSION=$(cat ../src/com/t_oster/visicut/gui/resources/VisicutApp.properties |grep Application.version)
+echo "Determining Version (may be overriden with environment variable VERSION):"
+VERSION=${VERSION:-$(cat ../src/com/t_oster/visicut/gui/resources/VisicutApp.properties |grep Application.version)}
 VERSION=${VERSION#*=}
 VERSION=${VERSION// /}
 echo "Version is: \"$VERSION\""
@@ -85,6 +86,10 @@ then
   cp -r "mac/VisiCut.app" .
   mkdir -p "VisiCut.app/Contents/Resources/Java"
   cp -r visicut/* "VisiCut.app/Contents/Resources/Java/"
+  mkdir "VisiCut.app/Contents/Java"
+  mv "VisiCut.app/Contents/Resources/Java/Visicut.jar" "VisiCut.app/Contents/Java/"
+  mv "VisiCut.app/Contents/Resources/Java/lib" "VisiCut.app/Contents/Java/"
+  cp "../src/com/t_oster/visicut/gui/resources/splash.png" "VisiCut.app/Contents/Resources/Java"
   echo "Updating Bundle Info"
   cp "VisiCut.app/Contents/Info.plist" .
   cat Info.plist|sed s#VISICUTVERSION#"$VERSION"#g > VisiCut.app/Contents/Info.plist

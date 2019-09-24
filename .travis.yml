@@ -1,19 +1,12 @@
 language: java
 jdk:
-  - openjdk7
   - openjdk8
-  - oraclejdk8
-
-branches:
-  only:
-  - master
-  - thunderlaser
+  - openjdk11
 
 before_install:
   - git submodule update --init --recursive
   - sudo apt-get -qq update
   - sudo apt-get install -y ant-optional
-  - (cd lib/LibLaserCut; git log) || true
 
 script: 
   - "./test.sh"
@@ -25,5 +18,4 @@ addons:
   # https://docs.travis-ci.com/user/hostname
   # https://github.com/travis-ci/travis-ci/issues/5227
   hostname: dummy
-
 
