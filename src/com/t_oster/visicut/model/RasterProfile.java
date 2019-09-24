@@ -19,6 +19,7 @@
 package com.t_oster.visicut.model;
 
 import com.t_oster.liblasercut.BlackWhiteRaster;
+import com.t_oster.liblasercut.LaserCutter;
 import com.t_oster.liblasercut.LaserJob;
 import com.t_oster.liblasercut.LaserProperty;
 import com.t_oster.liblasercut.ProgressListener;
@@ -32,12 +33,17 @@ import com.t_oster.visicut.misc.Helper;
 import com.t_oster.visicut.model.graphicelements.GraphicObject;
 import com.t_oster.visicut.model.graphicelements.GraphicSet;
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.IndexColorModel;
+import java.awt.image.WritableRaster;
+import java.util.Hashtable;
 import java.util.List;
 
 /**
@@ -109,7 +115,7 @@ public class RasterProfile extends LaserProfile
     {
       ditherAlgorithm = new FloydSteinberg();
     }
-    return ditherAlgorithm;
+    return ditherAlgorithm.clone(); // clone() required because otherwise we will get trouble with ProgressListener
   }
 
   /**
@@ -122,54 +128,46 @@ public class RasterProfile extends LaserProfile
     this.ditherAlgorithm = ditherAlgorithm;
   }
 
-  public BufferedImage getRenderedPreview(GraphicSet objects, MaterialProfile material, AffineTransform mm2px)
+  public BufferedImage getRenderedPreview(GraphicSet objects, MaterialProfile material, AffineTransform mm2px) throws InterruptedException
   {
     return this.getRenderedPreview(objects, material, mm2px, null);
   }
 
-  public BufferedImage getRenderedPreview(GraphicSet objects, MaterialProfile material, AffineTransform mm2px, ProgressListener pl)
+  private BufferedImage renderObjects(GraphicSet objects, AffineTransform mm2laserPx, Rectangle bb) {
+    // Create an Image which fits the bounding box
+    //
+    // Unfortunately, we cannot use BufferedImage.TYPE_BYTE_GRAY here, mainly
+    // because the SVG rendering refuses to render color gradients on a
+    // grayscale buffer. (just throws an exception).
+    BufferedImage scaledImg = new BufferedImage(bb.width, bb.height, BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = scaledImg.createGraphics();
+    //fill it with white background for dithering
+    g.setColor(Color.white);
+    g.fillRect(0, 0, scaledImg.getWidth(), scaledImg.getHeight());
+    g.setClip(0, 0, scaledImg.getWidth(), scaledImg.getHeight());
+    //render all objects onto the image, moved to the images origin
+    AffineTransform pipe = AffineTransform.getTranslateInstance(-bb.x, -bb.y);
+    pipe.concatenate(mm2laserPx);
+    pipe.concatenate(objects.getTransform());
+    g.setTransform(pipe);
+    // antialiasing doesn't make sense for 1-bit output, and makes font edges look jittery.
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+    g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+    for (GraphicObject o : objects)
+    {
+      o.render(g);
+    }
+    return scaledImg;
+  }
+
+  public BufferedImage getRenderedPreview(GraphicSet objects, MaterialProfile material, AffineTransform mm2px, ProgressListener pl) throws InterruptedException
   {
     Rectangle bb = Helper.toRect(Helper.transform(objects.getBoundingBox(), mm2px));
     final Color engraveColor = material.getEngraveColor();
     if (bb != null && bb.width > 0 && bb.height > 0)
-    {//Create an Image which fits the bounding box
-      final BufferedImage scaledImg = new BufferedImage(bb.width, bb.height, BufferedImage.TYPE_INT_ARGB);
-      Graphics2D g = scaledImg.createGraphics();
-      //fill it with black or white background for dithering depending on invert flag
-      g.setColor( (invertColors ? Color.black : Color.white) );
-      g.fillRect(0, 0, scaledImg.getWidth(), scaledImg.getHeight());
-      g.setClip(0, 0, scaledImg.getWidth(), scaledImg.getHeight());
-      //render all objects onto the image, moved to the images origin
-      AffineTransform pipe = AffineTransform.getTranslateInstance(-bb.x, -bb.y);
-      pipe.concatenate(mm2px);
-      pipe.concatenate(objects.getTransform());
-      g.setTransform(pipe);
-      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-      g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-      for (GraphicObject o : objects)
-      {
-        o.render(g);
-      }
-      BufferedImageAdapter ad = new BufferedImageAdapter(scaledImg, invertColors)
-      {
-        //TODO: Gefahr, dass man das Dithering ergebnis verändert, falls
-        //der Algorithmus einen Pixel 2x ausliest
-      @Override
-        public void setGreyScale(int x, int y, int greyscale)
-        {
-          if (greyscale == 255)
-          {
-            scaledImg.getAlphaRaster().setPixel(x, y, new int[]
-              {
-                0, 0, 0
-              });
-          }
-          else if (greyscale == 0)
-          {
-            scaledImg.setRGB(x, y, engraveColor.getRGB());
-          }
-        }
-      };
+    {
+      final BufferedImage scaledImg = renderObjects(objects, mm2px, bb);
+      BufferedImageAdapter ad = new BufferedImageAdapter(scaledImg, invertColors);
       ad.setColorShift(this.getColorShift());
       DitheringAlgorithm alg = this.getDitherAlgorithm();
       if (pl != null)
@@ -177,13 +175,43 @@ public class RasterProfile extends LaserProfile
         alg.addProgressListener(pl);
       }
       alg.ditherDirect(ad);
-      return scaledImg;
+
+
+      return convertToOneBitGrayscale(scaledImg, engraveColor);
     }
     return null;
   }
+// adapted from https://stackoverflow.com/a/12860219
+  /**
+   * convert a black/white image to 1bit indexed palette,
+   * optionally substituting $engraveColor for black.
+   *
+   * This saves about 75% of memory.
+   * @param image
+   * @param engraveColor the color which should be substituted for black (may be null)
+   * @return
+   */
+  public static BufferedImage convertToOneBitGrayscale(BufferedImage image, Color engraveColor) {
+  // black and white
+  IndexColorModel whiteOrBlack = new IndexColorModel(1, 2, new byte[] {(byte) 255, (byte) 0}, new byte[] {(byte) 255, (byte) 0}, new byte[] {(byte) 255, (byte) 0}, new byte[] {(byte) 255, (byte) 255});
+  IndexColorModel engravePreviewColored = new IndexColorModel(1, 2, new byte[] {(byte) 0, (byte) engraveColor.getRed()}, new byte[] {(byte) 0, (byte) engraveColor.getGreen()}, new byte[] {(byte) 0, (byte) engraveColor.getBlue()}, new byte[] {(byte) 0, (byte) 255});
+  BufferedImage result = new BufferedImage(
+            image.getWidth(),
+            image.getHeight(),
+            BufferedImage.TYPE_BYTE_INDEXED, whiteOrBlack);
+  Graphics g = result.getGraphics();
+  g.drawImage(image, 0, 0, null);
+  g.dispose();
+  if (engraveColor != null) {
+    BufferedImage resultColored = new BufferedImage(engravePreviewColored, result.getRaster(), result.isAlphaPremultiplied(), new Hashtable());
+    return resultColored;
+  } else {
+    return result;
+  }
+}
 
   @Override
-  public void renderPreview(Graphics2D gg, GraphicSet objects, MaterialProfile material, AffineTransform mm2px)
+  public void renderPreview(Graphics2D gg, GraphicSet objects, MaterialProfile material, AffineTransform mm2px) throws InterruptedException
   {
     Rectangle2D bb = Helper.transform(objects.getBoundingBox(), mm2px);
     if (bb != null && bb.getWidth() > 0 && bb.getHeight() > 0)
@@ -194,7 +222,7 @@ public class RasterProfile extends LaserProfile
   }
 
   @Override
-  public void addToLaserJob(LaserJob job, GraphicSet set, List<LaserProperty> laserProperties)
+  public void addToLaserJob(LaserJob job, GraphicSet set, List<LaserProperty> laserProperties, LaserCutter cutter) throws InterruptedException
   {
     double factor = Util.dpi2dpmm(this.getDPI());
     AffineTransform mm2laserPx = AffineTransform.getScaleInstance(factor, factor);
@@ -204,23 +232,8 @@ public class RasterProfile extends LaserProfile
       Rectangle bb = Helper.toRect(Helper.transform(objects.getBoundingBox(), mm2laserPx));
       if (bb != null && bb.width > 0 && bb.height > 0)
       {
-        BufferedImage scaledImg = new BufferedImage(bb.width, bb.height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = scaledImg.createGraphics();
-        //fill it with white background for dithering
-        g.setColor(Color.white);
-        g.fillRect(0, 0, scaledImg.getWidth(), scaledImg.getHeight());
-        g.setClip(0, 0, scaledImg.getWidth(), scaledImg.getHeight());
-        //render all objects onto the image, moved to the images origin
-        AffineTransform pipe = AffineTransform.getTranslateInstance(-bb.x, -bb.y);
-        pipe.concatenate(mm2laserPx);
-        pipe.concatenate(objects.getTransform());
-        g.setTransform(pipe);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        for (GraphicObject o : objects)
-        {
-          o.render(g);
-        }
+        // render into color image
+        BufferedImage scaledImg = renderObjects(objects, mm2laserPx, bb);
         //Then dither this image
         BufferedImageAdapter ad = new BufferedImageAdapter(scaledImg, invertColors);
         ad.setColorShift(this.getColorShift());
