@@ -1,3 +1,4 @@
 [submodule "LibLaserCut"]
-	path = LibLaserCut
-	url = https://github.com/t-oster/LibLaserCut.git
+        path = LibLaserCut
+        branch = ruida
+        url = https://github.com/kkaempf/LibLaserCut.git
