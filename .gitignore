@@ -24,3 +24,6 @@
 /lib/nbproject/private/
 /lib/build/
 /target/
+
+# Mac stuff:
+.DS_Store

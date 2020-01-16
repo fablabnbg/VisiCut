@@ -118,8 +118,8 @@ echo "Build Mac OS Version (Y/n)?"
 # URL and hash of the OpenJRE ZIP file for OSX.
 # You can override this with environment variables.
 # The distribution by Oracle has evil license terms, so we use the OpenJDK JRE from https://adoptopenjdk.net/
-OSX_JRE_URL=${OSX_JRE_URL:-"https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.5%2B10/OpenJDK11U-jre_x64_mac_hotspot_11.0.5_10.tar.gz"}
-OSX_JRE_SHA256=${OSX_JRE_SHA256:-"dfd212023321ebb41bce8cced15b4668001e86ecff6bffdd4f2591ccaae41566"}
+OSX_JRE_URL=${OSX_JRE_URL:-"https://github.com/AdoptOpenJDK/openjdk13-binaries/releases/download/jdk-13.0.1%2B9/OpenJDK13U-jre_x64_mac_hotspot_13.0.1_9.pkg"}
+OSX_JRE_SHA256=${OSX_JRE_SHA256:-"5e60a1364a363f74b0210d6c3fc3cefec98dcada75c8b239031e3947833e334a"}
 read answer || true
 if [ "$answer" != "n" ]
 then
@@ -144,7 +144,7 @@ then
   echo "Inserting JRE into the app bundle..:"
   mkdir -p VisiCut.app/Contents/Plugins
   tar -xf mac/jre/jre.tar.gz -C VisiCut.app/Contents/Plugins
-  mv VisiCut.app/Contents/Plugins/jdk-11.0.5+10-jre VisiCut.app/Contents/Plugins/JRE
+  mv VisiCut.app/Contents/Plugins/jdk-*-jre VisiCut.app/Contents/Plugins/JRE
   echo "Compressing Mac OS Bundle"
   rm -rf VisiCutMac-$VERSION.zip
   zip -r VisiCutMac-$VERSION.zip VisiCut.app > /dev/null || exit 1
