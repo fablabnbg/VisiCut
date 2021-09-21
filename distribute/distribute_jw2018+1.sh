@@ -69,9 +69,10 @@ if [ ! -d $ext_dir.orig ]; then
   for file in visicut_export.inx visicut_export_replace.inx daemonize.py visicut_export.py; do
     $wget $dl_e/$file -O $file
   done
-  sed -i -e 's@s.send(\(.*\)@s.send(str(\1.encode("utf-8"))@' visicut_export.py		# make s.send compatible with both python2 and 3
+  sed -i -e 's@get("SESSIONNAME")@get("SESSIONNAME_NOT_USED_IN_1_8")@' visicut_export.py	# always use port 6543 on win10 with visicut1.8
+  sed -i -e 's@s.send(\(.*\)@s.send(str(\1.encode("utf-8"))@' visicut_export.py			# make s.send compatible with both python2 and 3
   sed -i -e 's/^if IMPORT:/if IMPORT and False:  # --add is not implemented in old 1.8.x/' visicut_export.py
-  sed -i -e 's/>Add to VisiCut</>Add, if VisiCut is running</' visicut_export.inx	# discourage this option
+  sed -i -e 's/>Add to VisiCut</>Add, if VisiCut is running</' visicut_export.inx		# discourage this rarely-used option
 fi
 cd "$(dirname "$0")"
 
