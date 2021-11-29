@@ -125,12 +125,14 @@ def which(program, extraPaths=[]):
 def inkscape_version():
     """determine if Inkscape is version 0 or 1"""
     version = subprocess.check_output([INKSCAPEBIN, "--version"],  stderr=DEVNULL).decode('ASCII', 'ignore')
-    assert version.startswith("Inkscape ")
-    if version.startswith("Inkscape 0"):
-        return 0
+    if version.startswith("Inkscape "):
+        if version.startswith("Inkscape 0"):
+            return 0
+        else:
+            return 1
     else:
-        return 1
-    
+        # sometimes in inkscape 0.92 under windows 10, we don't get the version string at all.
+        return 0
 
 
 # Strip SVG to only contain selected elements, convert objects to paths, unlink clones
