@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.thomas-oster</groupId>
     <artifactId>visicut</artifactId>
-    <version>1.9-SNAPSHOT</version>
+    <version>1.9-195-gbaeb9a62-l20230628-jw</version>
     <name>VisiCut</name>
     <packaging>jar</packaging>
     <dependencies>
