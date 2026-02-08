@@ -86,6 +86,7 @@ public class VisicutModel extends Component // FIXME: "extends Component" isn't 
 
   private PlfPart selectedPart = null;
   public static final String PROP_SELECTEDPART = "selectedPart";
+  public static final float ZERO_TOLERANCE = 0.0001f;
 
   private PlfFile plfFile = new PlfFile();
 
@@ -866,16 +867,30 @@ public class VisicutModel extends Component // FIXME: "extends Component" isn't 
     
     for(PlfPart p : this.plfFile)
     {
-
       boolean modified = false;
       Rectangle2D bb = p.getGraphicObjects().getBoundingBox();
-      
+
       result.oldHeight = bb.getHeight();
       result.oldWidth = bb.getWidth();
-    
-      
+
       AffineTransform trans = p.getGraphicObjects().getTransform();
-      //first try moving to origin, if not in range
+
+      // automatically move if there are floating point errors
+      if (bb.getX() < 0 && bb.getX() > -ZERO_TOLERANCE)
+      {
+        // adding ZERO_TOLERANCE to show 0 instead of -0 mm as reference point x/y
+        trans.preConcatenate(AffineTransform.getTranslateInstance(-bb.getX() + ZERO_TOLERANCE, 0));
+        p.getGraphicObjects().setTransform(trans);
+        bb = p.getGraphicObjects().getBoundingBox();
+      }
+      if (bb.getY() < 0 && bb.getY() > -ZERO_TOLERANCE)
+      {
+        trans.preConcatenate(AffineTransform.getTranslateInstance(0, -bb.getY() + ZERO_TOLERANCE));
+        p.getGraphicObjects().setTransform(trans);
+        bb = p.getGraphicObjects().getBoundingBox();
+      }
+
+      // if outside of bed, try moving to origin
       if (bb.getX() < 0 || bb.getX() + bb.getWidth() > bw)
       {
         trans.preConcatenate(AffineTransform.getTranslateInstance(-bb.getX(), 0));
@@ -886,7 +901,7 @@ public class VisicutModel extends Component // FIXME: "extends Component" isn't 
         result.newHeight = bb.getHeight();
         result.newWidth = bb.getWidth();
         result.newX = bb.getX();
-        result.newY = bb.getY();        
+        result.newY = bb.getY();
       }
       if (bb.getY() < 0 || bb.getY() + bb.getHeight() > bh)
       {
@@ -898,8 +913,9 @@ public class VisicutModel extends Component // FIXME: "extends Component" isn't 
         result.newHeight = bb.getHeight();
         result.newWidth = bb.getWidth();
         result.newX = bb.getX();
-        result.newY = bb.getY();          
+        result.newY = bb.getY();
       }
+
       //if still too big (we're in origin now) check if rotation is useful 
       if (bb.getX() + bb.getWidth() > bw || bb.getY() + bb.getHeight() > bh)
       {
