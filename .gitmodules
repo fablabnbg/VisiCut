@@ -1,3 +1,3 @@
 [submodule "LibLaserCut"]
 	path = LibLaserCut
-	url = https://github.com/t-oster/LibLaserCut.git
+	url = git@github.com:fablabnbg/LibLaserCut.git
