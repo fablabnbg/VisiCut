@@ -24,7 +24,9 @@ jar: splash libLaserCut
 dist:
 	./distribute/distribute.sh zip
 	echo "Successfully built the Platform independent ZIP file. For other build variants, please run ./distribute/distribute.sh"
-run: jar
+run:
+	@echo "Running the compiled JAR. If you'd like to recompile, run 'make jar'."
+	@echo
 	java -Xmx2048m -Xms256m -jar target/visicut*full.jar
 libLaserCut:
 	@test -f LibLaserCut/pom.xml  || { echo "Error: the LibLaserCut submodule is missing. Try running 'git submodule update --init'."; false; }
