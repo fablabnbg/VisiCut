@@ -29,7 +29,6 @@ import re
 import subprocess
 import tempfile
 import unicodedata
-import codecs
 import random
 import string
 import socket
@@ -283,7 +282,7 @@ def get_original_filename(filename):
     docname = None
 
     # parse SVG for docname tag
-    with codecs.open(filename, "r", encoding='utf-8') as f:
+    with open(filename, encoding='utf-8') as f:
         for line in f:
             if 'sodipodi:docname="' in line:
                 matches = re.search('sodipodi:docname="(.*).svg"', line)
