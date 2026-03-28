@@ -6,13 +6,12 @@ PREFIX?=/usr
 all: jar
 
 help:
-	@echo "\n\n\n\
-	usage: \n\
-	make (or make jar): compile (includes LibLaserCut) \n\
-	make run: compile and run \n\
-	make dist: build setup files (in ./distribute subdirectory)\n\
-	make clean: remove all compiled files\n\
-	"
+	@echo "usage:"
+	@echo "  'make': same as 'make jar'"
+	@echo "  'make jar': compile VisiCut (including LibLaserCut)"
+	@echo "  'make run': run the compiled VisiCut"
+	@echo "  'make dist': build setup files (in distribute/ subdirectory)"
+	@echo "  'make clean': remove all compiled files"
 splash:
 	./generatesplash.sh
 jar: splash libLaserCut
