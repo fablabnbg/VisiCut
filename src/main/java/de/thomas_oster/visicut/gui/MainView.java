@@ -365,10 +365,6 @@ public class MainView extends javax.swing.JFrame
     this.refreshRecentFilesMenu();
     this.jmInstallInkscape.setEnabled(Helper.isInkscapeExtensionInstallable());
     this.jmInstallIllustrator.setEnabled(Helper.isIllustratorScriptInstallable());
-    if (!Helper.isInkscapeExtensionInstallable() && !Helper.isIllustratorScriptInstallable())
-    {
-      this.jmExtras.setVisible(false);
-    }
     this.refreshExampleMenu();
     //initialize states coorectly
     this.visicutModel1PropertyChange(new java.beans.PropertyChangeEvent(visicutModel1, VisicutModel.PROP_SELECTEDLASERDEVICE, null, null));
