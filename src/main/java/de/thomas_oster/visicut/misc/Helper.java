@@ -289,12 +289,20 @@ public class Helper
       }
     }
     
-    trg = new File(new File(trg, "inkscape"), "extensions");      
+    trg = new File(new File(trg, "inkscape"), "extensions");
     
     if (!trg.exists() && !trg.mkdirs())
     {
       throw new FileNotFoundException("Can't create directory: "+trg);
     }
+
+    // clear previously installed extension files
+    for (String f_ : new String[] { "visicut_export.inx", "visicut_export_replace.inx", "visicut_export.py" }) {
+      try {
+        new File(trg, f_).delete();
+      } catch (Exception e) {}
+    }
+
     for (File f :src.listFiles())
     {
       if ("visicut_export.py".equals(f.getName()))
