@@ -22,6 +22,8 @@ import com.frochr123.periodictasks.RefreshCameraThread;
 import de.thomas_oster.liblasercut.IllegalJobException;
 import de.thomas_oster.liblasercut.LaserCutter;
 import de.thomas_oster.liblasercut.properties.LaserProperty;
+import de.thomas_oster.liblasercut.properties.FloatPowerSpeedFrequencyProperty;
+import de.thomas_oster.liblasercut.properties.FloatMinMaxPowerSpeedFrequencyProperty;
 import de.thomas_oster.liblasercut.ProgressListener;
 import de.thomas_oster.liblasercut.platform.Util;
 import de.thomas_oster.uicomponents.PlatformIcon;
@@ -2090,6 +2092,38 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       {
         return;
       }
+
+
+      String cuttingSettingsZeroErrorMessage = "";
+      for (Map.Entry<LaserProfile, List<LaserProperty>> cuttingSetting : cuttingSettings.entrySet()) {
+        for (LaserProperty laserProperty : cuttingSetting.getValue()) {
+          if (laserProperty instanceof FloatPowerSpeedFrequencyProperty) {
+            FloatPowerSpeedFrequencyProperty floatPowerSpeedFrequencyProperty = (FloatPowerSpeedFrequencyProperty) laserProperty;
+
+            if (floatPowerSpeedFrequencyProperty.getFrequency() == 0)
+              cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": frequency = 0\n";
+          }
+
+          if (laserProperty instanceof FloatMinMaxPowerSpeedFrequencyProperty) {
+            FloatMinMaxPowerSpeedFrequencyProperty floatMinMaxPowerSpeedFrequencyProperty = (FloatMinMaxPowerSpeedFrequencyProperty) laserProperty;
+
+            if (floatMinMaxPowerSpeedFrequencyProperty.getMinPower() == 0)
+              cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": min power = 0\n";
+          }
+
+          if (laserProperty.getPower() == 0)
+            cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": power = 0\n";
+
+          if (laserProperty.getSpeed() == 0)
+            cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": speed = 0\n";
+        }
+      }
+      if (!cuttingSettingsZeroErrorMessage.equals("")) {
+        JOptionPane.showMessageDialog(this, bundle.getString("CUTTING_SETTINGS_ZERO") + ":\n\n" + cuttingSettingsZeroErrorMessage, "", JOptionPane.ERROR_MESSAGE);
+        return;
+      }
+
+
       if (VisicutModel.getInstance().getStartPoint() != null)
       {
         if (!dialog.showYesNoQuestion(bundle.getString("STARTPOINTWARNING")))
