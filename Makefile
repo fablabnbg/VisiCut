@@ -8,24 +8,28 @@ all: jar
 help:
 	@echo "usage:"
 	@echo "  'make': same as 'make jar'"
-	@echo "  'make jar': compile VisiCut (including LibLaserCut)"
-	@echo "  'make run': run the compiled VisiCut"
+	@echo "  'make fulljar': compile VisiCut (including LibLaserCut) and run it"
+	@echo "  'make jar': compile VisiCut and run it"
+	@echo "  'make run': run VisiCut"
 	@echo "  'make dist': build setup files (in distribute/ subdirectory)"
 	@echo "  'make clean': remove all compiled files"
 
 splash:
 	./generatesplash.sh
 
-jar: splash libLaserCut
-	# Write version into properties file (used by Help-About screen).
-	./versionnumber.sh
-	echo "Version = $(shell ./versionnumber.sh)" > src/main/resources/de/thomas_oster/visicut/gui/resources/VisicutAppVersion.properties
+jar:
+	mvn package
+	java -Xmx2048m -Xms256m -jar target/visicut*full.jar
+
+fulljar: splash libLaserCut
+	@echo "Version = $(shell ./versionnumber.sh)" > src/main/resources/de/thomas_oster/visicut/gui/resources/VisicutAppVersion.properties
 	mvn initialize
 	mvn package
+	java -Xmx2048m -Xms256m -jar target/visicut*full.jar
 
 dist:
 	./distribute/distribute.sh zip
-	echo "Successfully built the Platform independent ZIP file. For other build variants, please run ./distribute/distribute.sh"
+	@echo "Successfully built the Platform independent ZIP file. For other build variants, please run ./distribute/distribute.sh"
 
 appimage:
 	./distribute/distribute.sh linux-appimage
@@ -36,7 +40,7 @@ run:
 	java -Xmx2048m -Xms256m -jar target/visicut*full.jar
 
 libLaserCut:
-	@test -f LibLaserCut/pom.xml  || { echo "Error: the LibLaserCut submodule is missing. Try running 'git submodule update --init'."; false; }
+	@test -f LibLaserCut/pom.xml || { echo "Error: the LibLaserCut submodule is missing. Try running 'git submodule update --init'."; false; }
 	cd LibLaserCut && mvn install
 	cd ..
 
