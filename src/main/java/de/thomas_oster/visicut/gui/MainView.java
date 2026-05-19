@@ -1681,9 +1681,9 @@ public class MainView extends javax.swing.JFrame
     List<String> recent = this.visicutModel1.getPreferences().getRecentFiles();
     recent.remove(file.getAbsolutePath());
     recent.add(0, file.getAbsolutePath());
-    if (recent.size() > 5)
+    if (recent.size() > 10)
     {
-      recent.subList(5, recent.size()).clear();
+      recent.subList(10, recent.size()).clear();
     }
     this.refreshRecentFilesMenu();
     try
