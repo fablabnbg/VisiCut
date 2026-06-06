@@ -3,12 +3,12 @@
 
 PREFIX?=/usr
 
-all: jar
+all: jar run
 
 help:
 	@echo "usage:"
 	@echo "  'make': same as 'make jar'"
-	@echo "  'make jar': compile VisiCut (including LibLaserCut)"
+	@echo "  'make jar': compile VisiCut (including LibLaserCut) and run it"
 	@echo "  'make run': run the compiled VisiCut"
 	@echo "  'make dist': build setup files (in distribute/ subdirectory)"
 	@echo "  'make clean': remove all compiled files"
