@@ -255,7 +255,7 @@ public class VectorProfile extends LaserProfile
   }
 
   @Override
-  public void addToLaserJob(LaserJob job, GraphicSet objects, List<LaserProperty> laserProperties, LaserCutter cutter)
+  public void addToLaserJob(LaserJob job, GraphicSet objects, String laserProfileName, List<LaserProperty> laserProperties, LaserCutter cutter)
   {
     if (this.isUseOutline())
     {
@@ -263,7 +263,7 @@ public class VectorProfile extends LaserProfile
     }
     double factor = Util.dpi2dpmm(this.getDPI());
     AffineTransform mm2laserpx = AffineTransform.getScaleInstance(factor, factor);
-    VectorPart part = new VectorPart(laserProperties.get(0), this.getDPI());
+    VectorPart part = new VectorPart(laserProfileName, laserProperties.get(0), this.getDPI());
     boolean optimize = true;
     for (LaserProperty prop : laserProperties)
     {

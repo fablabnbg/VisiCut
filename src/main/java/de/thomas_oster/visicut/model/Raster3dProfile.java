@@ -182,7 +182,7 @@ public class Raster3dProfile extends LaserProfile
   }
 
   @Override
-  public void addToLaserJob(LaserJob job, GraphicSet set, List<LaserProperty> laserProperties, LaserCutter cutter)
+  public void addToLaserJob(LaserJob job, GraphicSet set, String laserProfileName, List<LaserProperty> laserProperties, LaserCutter cutter)
   {
     double factor = Util.dpi2dpmm(this.getDPI());
     AffineTransform mm2laserPx = AffineTransform.getScaleInstance(factor, factor);
@@ -212,7 +212,7 @@ public class Raster3dProfile extends LaserProfile
         ad.setColorShift(this.getColorShift());
         for (LaserProperty prop : laserProperties)
         {
-          Raster3dPart part = new Raster3dPart(ad, prop, new Point((int) bb.getX(), (int) bb.getY()), getDPI());
+          Raster3dPart part = new Raster3dPart(ad, laserProfileName, prop, new Point((int) bb.getX(), (int) bb.getY()), getDPI());
           job.addPart(part);
         }
       }

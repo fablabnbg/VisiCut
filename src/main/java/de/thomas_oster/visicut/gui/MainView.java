@@ -2096,35 +2096,6 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       }
 
 
-      String cuttingSettingsZeroErrorMessage = "";
-      for (Map.Entry<LaserProfile, List<LaserProperty>> cuttingSetting : cuttingSettings.entrySet()) {
-        for (LaserProperty laserProperty : cuttingSetting.getValue()) {
-          if (laserProperty instanceof FloatPowerSpeedFrequencyProperty) {
-            FloatPowerSpeedFrequencyProperty floatPowerSpeedFrequencyProperty = (FloatPowerSpeedFrequencyProperty) laserProperty;
-
-            if (floatPowerSpeedFrequencyProperty.getFrequency() == 0)
-              cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": frequency = 0\n";
-          }
-
-          if (laserProperty instanceof FloatMinMaxPowerSpeedFrequencyProperty) {
-            FloatMinMaxPowerSpeedFrequencyProperty floatMinMaxPowerSpeedFrequencyProperty = (FloatMinMaxPowerSpeedFrequencyProperty) laserProperty;
-
-            if (floatMinMaxPowerSpeedFrequencyProperty.getMinPower() == 0)
-              cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": min power = 0\n";
-          }
-
-          if (laserProperty.getPower() == 0)
-            cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": power = 0\n";
-
-          if (laserProperty.getSpeed() == 0)
-            cuttingSettingsZeroErrorMessage += cuttingSetting.getKey() + ": speed = 0\n";
-        }
-      }
-      if (!cuttingSettingsZeroErrorMessage.equals("")) {
-        JOptionPane.showMessageDialog(this, bundle.getString("CUTTING_SETTINGS_ZERO") + ":\n\n" + cuttingSettingsZeroErrorMessage, "", JOptionPane.ERROR_MESSAGE);
-        return;
-      }
-
 
       if (VisicutModel.getInstance().getStartPoint() != null)
       {
@@ -2167,8 +2138,7 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         }
       };
       new Thread(() -> {
-          try
-          {
+          try {
             List<String> warnings = new LinkedList<>();
             if (saveToFile == null)
             {
@@ -2191,25 +2161,18 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
               }
               dialog.showSuccessMessage(txt);
             });
-            
-          }
-          catch (Exception ex)
-          {
+          } catch (Exception ex) {
             SwingUtilities.invokeLater(() -> {
-              if (ex instanceof IllegalJobException && ex.getMessage().startsWith("Illegal Focus value"))
-              {
+              if (ex instanceof IllegalJobException && ex.getMessage().startsWith("Illegal Focus value")) {
                 dialog.showWarningMessage(bundle.getString("YOU MATERIAL IS TOO HIGH FOR AUTOMATIC FOCUSSING.PLEASE FOCUS MANUALLY AND SET THE TOTAL HEIGHT TO 0."));
-              }
-              else if (ex instanceof java.net.SocketTimeoutException)
-              {
+              } else if (ex instanceof IllegalJobException && ex.getMessage().startsWith("One or more laser settings are zero:\n")) {
+                String message = ex.getMessage().replace("One or more laser settings are zero:\n", "");
+                JOptionPane.showMessageDialog(this, bundle.getString("CUTTING_SETTINGS_ZERO") + ":\n\n" + message, "", JOptionPane.ERROR_MESSAGE);
+              } else if (ex instanceof java.net.SocketTimeoutException) {
                 dialog.showErrorMessage(ex, bundle.getString("SOCKETTIMEOUT") + " " + bundle.getString("CHECKSWITCHEDON"));
-              }
-              else if (ex instanceof java.net.UnknownHostException)
-              {
+              } else if (ex instanceof java.net.UnknownHostException) {
                 dialog.showErrorMessage(ex, bundle.getString("UNKNOWNHOST") + " " + bundle.getString("CHECKSWITCHEDON"));
-              }
-              else
-              {
+              } else {
                 dialog.showErrorMessage(ex);
               }
             });

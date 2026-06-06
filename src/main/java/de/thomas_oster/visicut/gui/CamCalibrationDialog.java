@@ -504,7 +504,7 @@ private void sendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
     {
       if (vp == null)
       {
-        vp = new VectorPart(lp, profile.getDPI());
+        vp = new VectorPart("CamCalibrationDialog.sendButtonActionPerformed", lp, profile.getDPI());
       }
       else
       {

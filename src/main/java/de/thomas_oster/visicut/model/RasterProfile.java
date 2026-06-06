@@ -226,7 +226,7 @@ public class RasterProfile extends LaserProfile
   }
 
   @Override
-  public void addToLaserJob(LaserJob job, GraphicSet set, List<LaserProperty> laserProperties, LaserCutter cutter) throws InterruptedException
+  public void addToLaserJob(LaserJob job, GraphicSet set, String laserProfileName, List<LaserProperty> laserProperties, LaserCutter cutter) throws InterruptedException
   {
     double factor = Util.dpi2dpmm(this.getDPI());
     AffineTransform mm2laserPx = AffineTransform.getScaleInstance(factor, factor);
@@ -244,7 +244,7 @@ public class RasterProfile extends LaserProfile
         BlackWhiteRaster bw = new BlackWhiteRaster(ad, this.getDitherAlgorithm());
         for (LaserProperty prop : laserProperties)
         {
-          RasterPart part = new RasterPart(bw, prop, new Point(bb.x, bb.y), getDPI());
+          RasterPart part = new RasterPart(bw, laserProfileName, prop, new Point(bb.x, bb.y), getDPI());
           job.addPart(part);
         }
       }

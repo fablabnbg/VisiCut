@@ -135,7 +135,7 @@ public abstract class LaserProfile implements ImageListable, Cloneable
   
   public abstract void renderPreview(Graphics2D g, GraphicSet objects, MaterialProfile material, AffineTransform mm2px) throws InterruptedException;
 
-  public abstract void addToLaserJob(LaserJob job, GraphicSet objects, List<LaserProperty> laserProperties, LaserCutter cutter) throws InterruptedException;
+  public abstract void addToLaserJob(LaserJob job, GraphicSet objects, String laserProfileName, List<LaserProperty> laserProperties, LaserCutter cutter) throws InterruptedException;
 
   @Override
   public String toString()

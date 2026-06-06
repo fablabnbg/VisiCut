@@ -717,7 +717,7 @@ public class VisicutModel extends Component // FIXME: "extends Component" isn't 
         }
         List<LaserProperty> props = propmap.get(pr);
         try {
-          pr.addToLaserJob(job, set, this.addFocusOffset(props, focusOffset), this.selectedLaserDevice.getLaserCutter());
+          pr.addToLaserJob(job, set, pr.getName(), this.addFocusOffset(props, focusOffset), this.selectedLaserDevice.getLaserCutter());
         } catch (InterruptedException ex) {
           throw new RuntimeException("this must not happen");
         }
@@ -809,7 +809,7 @@ public class VisicutModel extends Component // FIXME: "extends Component" isn't 
       double dpi = lasercutter.getResolutions().get(lasercutter.getResolutions().size()-1);
       double factor = Util.dpi2dpmm(dpi);
       AffineTransform mm2laserpx = AffineTransform.getScaleInstance(factor, factor);
-      VectorPart part = new VectorPart(lasercutter.getLaserPropertyForVectorPart(), dpi);
+      VectorPart part = new VectorPart("VisicutModel.moveHeadTo", lasercutter.getLaserPropertyForVectorPart(), dpi);
       mm2laserpx.transform(p, p);
       part.moveto((int) p.x, (int) p.y);
       job.addPart(part);
