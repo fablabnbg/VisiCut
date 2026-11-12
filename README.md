@@ -1,4 +1,6 @@
 # VisiCut
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffablabnbg%2FVisiCut.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffablabnbg%2FVisiCut?ref=badge_shield)
+
 
 A userfriendly, platform-independent tool for preparing, saving and sending jobs to Lasercutters.<br/>
 For more information please look at the [project page](https://www.visicut.org).<br/>
@@ -18,3 +20,7 @@ It includes sane defaults and many smaller improvements over [upstream VisiCut](
 
 For controlling Lasercutters, VisiCut uses [LibLaserCut](https://github.com/t-oster/LibLaserCut).<br/>
 Feel free to create your own, personal Lasercutter Applications.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Ffablabnbg%2FVisiCut.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Ffablabnbg%2FVisiCut?ref=badge_large)
